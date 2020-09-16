@@ -15,6 +15,16 @@ from collections import defaultdict
 from functools import partial
 from logging import debug, info, error
 
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
 # Default timeout in seconds after which SSH stops trying to connect
 DEFAULT_SSH_TIMEOUT = 3
 
@@ -74,7 +84,7 @@ for user in [{users}]:
         print('Unknown')
 EOF
 """
-REMOTE_REAL_NAMES_CMD = '{} python - {}'.format(SSH_CMD, REAL_NAMES_CMD)
+REMOTE_REAL_NAMES_CMD = '{} python3 - {}'.format(SSH_CMD, REAL_NAMES_CMD)
 
 
 def run_command(cmd):
@@ -202,22 +212,22 @@ def print_gpu_infos(server, gpu_infos, run_ps, run_get_real_names,
                          for pid in gpu_info['pids']))
         real_names_by_users = run_get_real_names(users=all_users)
 
-    info('Server {}:'.format(server))
+    info('Server {}:'.format(bcolors.BOLD + server + bcolors.ENDC))
     for gpu_info in gpu_infos:
-        users = set((users_by_pid[pid] for pid in gpu_info['pids']))
+        users = set((users_by_pid[pid] for pid in gpu_info['pids'])) - set(['gdm'])
         if filter_by_user is not None and filter_by_user not in users:
             continue
 
-        if len(gpu_info['pids']) == 0:
-            status = 'Free'
+        if len(gpu_info['pids']) == 0 or users == set():
+            status = bcolors.OKGREEN + 'Free' + bcolors.ENDC
         else:
             if translate_to_real_names:
-                users = ['{} ({})'.format(user, real_names_by_users[user])
+                users = ['{} ({})'.format(bcolors.WARNING + user + bcolors.ENDC, real_names_by_users[user].split(',')[0])
                          for user in users]
 
-            status = 'Used by {}'.format(', '.join(users))
+            status = ', '.join(users)
 
-        info('\tGPU {} ({}): {}'.format(gpu_info['idx'],
+        info('\tGPU {} ({:^19}): {}'.format(gpu_info['idx'],
                                         gpu_info['model'],
                                         status))
 
